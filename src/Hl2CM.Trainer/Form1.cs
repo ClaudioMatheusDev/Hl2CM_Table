@@ -212,6 +212,9 @@ public partial class Form1 : Form
         if (_trainer is null || !_trainer.HasValidPlayer)
             return;
 
+        try { _trainer.MaintainCheats(); }
+        catch { /* transient read/write failure during level transitions */ }
+
         foreach (var (box, read) in _stats)
         {
             if (box.Focused) continue; // don't fight the user while they're typing

@@ -5,7 +5,7 @@ public static class PatternScanner
     /// <summary>
     /// Compares the bytes currently in the target process at <paramref name="address"/>
     /// against the bytes the cheat table was built against. If they don't match, the game
-    /// version differs from "v24, build 2257546" and patching would corrupt/crash it.
+    /// version differs from Steam build 19307283 and patching would corrupt/crash it.
     /// </summary>
     public static bool VerifyOriginalBytes(ProcessMemory pm, IntPtr address, byte[] expected)
     {

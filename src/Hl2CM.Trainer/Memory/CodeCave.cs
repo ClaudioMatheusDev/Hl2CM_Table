@@ -43,9 +43,15 @@ public sealed class CodeCave : IDisposable
 
         if (!PatternScanner.VerifyOriginalBytes(pm, hookAddress, expectedOriginalBytes))
         {
+            var actual = pm.TryReadBytes(hookAddress, expectedOriginalBytes.Length, out var bytes)
+                ? BitConverter.ToString(bytes).Replace('-', ' ')
+                : "<nao foi possivel ler>";
+            var expected = BitConverter.ToString(expectedOriginalBytes).Replace('-', ' ');
+
             throw new InvalidOperationException(
-                $"[{name}] Bytes at 0x{hookAddress:X} don't match the expected 'v24 build 2257546' signature. " +
-                "The game version differs from the one this cheat table targets — refusing to patch to avoid a crash.");
+                $"[{name}] Os bytes em 0x{hookAddress:X} nao correspondem a assinatura esperada da Steam build 19307283.\n" +
+                $"Esperado: {expected}\nEncontrado: {actual}\n" +
+                "Verifique se o processo selecionado e o hl2.exe da build correta; o patch foi bloqueado para evitar um crash.");
         }
 
         return new CodeCave(pm, name, hookAddress, hookLength, expectedOriginalBytes, caveBody);
@@ -61,6 +67,7 @@ public sealed class CodeCave : IDisposable
         _caveAddress = _pm.Allocate((uint)(_caveBody.Length + 5));
         var jmpBack = X86Asm.JmpRel32(IntPtr.Add(_caveAddress, _caveBody.Length), returnAddress);
         _pm.WriteBytes(_caveAddress, X86Asm.Concat(_caveBody, jmpBack));
+        _pm.FlushInstructionCache(_caveAddress, _caveBody.Length + 5);
 
         // hook site = jmp to cave, NOP-padded to hookLength
         var jmpToCave = X86Asm.JmpRel32(_hookAddress, _caveAddress);
@@ -68,6 +75,7 @@ public sealed class CodeCave : IDisposable
         jmpToCave.CopyTo(patch, 0);
         for (int i = 5; i < _hookLength; i++) patch[i] = 0x90;
         _pm.WriteBytes(_hookAddress, patch);
+        _pm.FlushInstructionCache(_hookAddress, patch.Length);
 
         IsEnabled = true;
     }

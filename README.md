@@ -1,7 +1,7 @@
 # Hl2CM_Table
 
 Trainer (cheat menu) para **Half-Life 2** feito em C#/WinForms, portado a partir de uma
-cheat table do Cheat Engine (`hl2.txt`) para a build **v24, build 2257546** do jogo
+cheat table do Cheat Engine (`hl2.txt`) para a Steam build **19307283** do jogo
 (`server.dll`). Uso **offline / singleplayer**, para fins de estudo de engenharia
 reversa e manipulação de memória de processo.
 
@@ -29,7 +29,7 @@ recusa o patch e mostra um erro — em vez de arriscar corromper a memória e tr
 
 - Windows
 - [.NET SDK 8 ou superior](https://dotnet.microsoft.com/download) (o projeto usa `net10.0-windows`)
-- Half-Life 2 (Steam), rodando **offline / singleplayer**, build v24 (2257546)
+- Half-Life 2 (Steam), rodando **offline / singleplayer**, build 19307283
 
 ## Como rodar
 
@@ -54,7 +54,7 @@ terminal como admin antes do `dotnet run`).
    **Atualizar** se tiver aberto o jogo depois do trainer) e clique em **Conectar**.
    - `Conectado: hl2 (pid ...)` em verde = ok, hooks de captura de ponteiro instalados.
    - Se aparecer um erro de "bytes não batem / versão do jogo diferente", significa que
-     o `server.dll` instalado não é a build v24/2257546 que a tabela original mira — os
+   o `server.dll` instalado não é a Steam build 19307283 que a tabela original mira — os
      offsets não são válidos para essa versão.
 4. Marque os checkboxes em **Cheats** para ativar/desativar cada patch:
    - **Vida infinita**

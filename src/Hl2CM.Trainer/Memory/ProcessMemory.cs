@@ -73,4 +73,10 @@ public sealed class ProcessMemory : IDisposable
     public void Free(IntPtr address) => NativeMethods.VirtualFreeEx(Handle, address, 0, AllocationType.Release);
 
     public void Dispose() => NativeMethods.CloseHandle(Handle);
+    
+    public void FlushInstructionCache(IntPtr address, int length)
+    {
+        if (!NativeMethods.FlushInstructionCache(Handle, address, (UIntPtr)length))
+            throw new InvalidOperationException($"FlushInstructionCache failed at 0x{address:X} (Win32 error {Marshal.GetLastWin32Error()}).");
+    }
 }

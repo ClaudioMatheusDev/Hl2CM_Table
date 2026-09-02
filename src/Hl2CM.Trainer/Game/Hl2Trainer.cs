@@ -5,7 +5,7 @@ namespace Hl2CM.Trainer.Game;
 
 /// <summary>
 /// High-level C# port of the hl2.CT Cheat Engine table for Half-Life 2 (server.dll,
-/// v24 build 2257546). Everything here mirrors one entry from the original table:
+/// Steam build 19307283). Everything here mirrors one entry from the original table:
 ///
 ///  - PlayerStruct / AmmoClip: the two "pointer capture" hooks the table installs so
 ///    memrec.Child[0].Address can be re-read every tick (here we just re-read the
@@ -51,20 +51,20 @@ public sealed class Hl2Trainer : IDisposable
     {
         // --- Pointer captures (must be enabled before anything else works) ---
 
-        // server.dll+1FE8DE: cmp dword ptr [ebx+0E0],00  (7 bytes)
+        // server.dll+20A5AE: cmp dword ptr [ebx+0E0],00  (7 bytes)
         _hooks["PlayerStruct"] = CodeCave.Prepare(
             _pm, "PlayerStruct",
-            hookAddress: Server(0x1FE8DE),
+            hookAddress: Server(0x20A5AE),
             hookLength: 7,
             expectedOriginalBytes: new byte[] { 0x83, 0xBB, 0xE0, 0x00, 0x00, 0x00, 0x00 },
             caveBody: X86Asm.Concat(
                 X86Asm.MovAbsFromReg(Reg32.Ebx, _playerStructCell),
                 new byte[] { 0x83, 0xBB, 0xE0, 0x00, 0x00, 0x00, 0x00 })); // re-run the original cmp
 
-        // server.dll+F5901: cmp dword ptr [esi+4AC],00  (7 bytes)
+        // server.dll+FC5C7: cmp dword ptr [esi+4AC],00  (7 bytes)
         _hooks["AmmoClip"] = CodeCave.Prepare(
             _pm, "AmmoClip",
-            hookAddress: Server(0xF5901),
+            hookAddress: Server(0xFC5C7),
             hookLength: 7,
             expectedOriginalBytes: new byte[] { 0x83, 0xBE, 0xAC, 0x04, 0x00, 0x00, 0x00 },
             caveBody: X86Asm.Concat(
@@ -73,40 +73,40 @@ public sealed class Hl2Trainer : IDisposable
 
         // --- Constant-value cheats ---
 
-        // server.dll+E71CA: mov [esi],edi / pop edi / mov eax,esi  (5 bytes)
+        // server.dll+407CD: mov [esi],edi / pop edi / mov eax,esi  (5 bytes)
         _hooks["InfAmmoPrimary"] = CodeCave.Prepare(
             _pm, "InfAmmoPrimary",
-            hookAddress: Server(0xE71CA),
+            hookAddress: Server(0x407CD),
             hookLength: 5,
             expectedOriginalBytes: new byte[] { 0x89, 0x3E, 0x5F, 0x8B, 0xC6 },
             caveBody: X86Asm.Concat(
                 X86Asm.MovRegImm32(Reg32.Edi, 99),
                 new byte[] { 0x89, 0x3E, 0x5F, 0x8B, 0xC6 }));
 
-        // server.dll+F094E: call dword ptr [eax+4F8]  (6 bytes)
+        // server.dll+F5321: call dword ptr [eax+4F8]  (6 bytes)
         _hooks["InfAmmoSecondary"] = CodeCave.Prepare(
             _pm, "InfAmmoSecondary",
-            hookAddress: Server(0xF094E),
+            hookAddress: Server(0xF5321),
             hookLength: 6,
             expectedOriginalBytes: new byte[] { 0xFF, 0x90, 0xF8, 0x04, 0x00, 0x00 },
             caveBody: X86Asm.Concat(
                 new byte[] { 0xFF, 0x90, 0xF8, 0x04, 0x00, 0x00 },
                 X86Asm.MovRegImm32(Reg32.Ebx, 99)));
 
-        // server.dll+EB8AE: call dword ptr [eax+1E4]  (6 bytes)
+        // server.dll+4069D: call dword ptr [eax+1E4]  (6 bytes)
         _hooks["InfHealth"] = CodeCave.Prepare(
             _pm, "InfHealth",
-            hookAddress: Server(0xEB8AE),
+            hookAddress: Server(0x4069D),
             hookLength: 6,
             expectedOriginalBytes: new byte[] { 0xFF, 0x90, 0xE4, 0x01, 0x00, 0x00 },
             caveBody: X86Asm.Concat(
                 new byte[] { 0xFF, 0x90, 0xE4, 0x01, 0x00, 0x00 },
                 X86Asm.MovRegImm32(Reg32.Edi, 999)));
 
-        // server.dll+1EC1AB: call dword ptr [eax+6F4]  (6 bytes)
+        // server.dll+20805E: call dword ptr [eax+6F4]  (6 bytes)
         _hooks["InfSuitArmor"] = CodeCave.Prepare(
             _pm, "InfSuitArmor",
-            hookAddress: Server(0x1EC1AB),
+            hookAddress: Server(0x20805E),
             hookLength: 6,
             expectedOriginalBytes: new byte[] { 0xFF, 0x90, 0xF4, 0x06, 0x00, 0x00 },
             caveBody: X86Asm.Concat(
@@ -141,6 +141,41 @@ public sealed class Hl2Trainer : IDisposable
     {
         if (enabled) _hooks[name].Enable();
         else _hooks[name].Disable();
+    }
+
+    public void MaintainCheats()
+    {
+        if (HasValidPlayer)
+        {
+            if (InfiniteHealth)
+                SetHealthCurrent(GetHealthMax());
+
+            if (InfiniteSuitArmor)
+                SetSuitCurrent(999);
+
+            if (InfiniteAmmoPrimary || InfiniteAmmoSecondary)
+            {
+                foreach (var offset in new[]
+                {
+                    PlayerOffsets.AmmoPistol,
+                    PlayerOffsets.AmmoMagnum,
+                    PlayerOffsets.AmmoSmg1,
+                    PlayerOffsets.AmmoSmg1Alt,
+                    PlayerOffsets.AmmoImpulseRifle,
+                    PlayerOffsets.AmmoImpulseRifleAlt,
+                    PlayerOffsets.AmmoShotgun,
+                    PlayerOffsets.AmmoCrossbow,
+                    PlayerOffsets.AmmoGrenades,
+                    PlayerOffsets.AmmoRpg,
+                })
+                {
+                    SetAmmo(offset, 999);
+                }
+            }
+        }
+
+        if (HasValidAmmoClip && (InfiniteAmmoPrimary || InfiniteAmmoSecondary))
+            SetAmmoClipCurrent(999);
     }
 
     // --- Direct stat reads/writes (require ActivatePointers() + HasValidPlayer) ---
